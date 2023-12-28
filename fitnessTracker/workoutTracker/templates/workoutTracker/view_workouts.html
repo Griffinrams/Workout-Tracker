@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your Workouts</title>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .workout-item {
+            margin-bottom: 20px;
+        }
+        .workout-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .edit-btn {
+            margin-right: 5px;
+        }
+		.view-btn {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Your Workouts</h1>
+    {% for workout in workouts %}
+    <div id="workout-{{ workout.id }}" class="workout-item">
+        <div class="workout-title">{{ workout.title }}</div>
+        <div class="workout-type">{{ workout.workout_type }}</div>
+		<button class="view-btn" onclick="viewWorkout({{ workout.id }})">View</button>
+        <button class="edit-btn" onclick="editWorkout({{ workout.id }})">Edit</button>
+		<button onclick="deleteWorkout({{ workout.id }})">Delete</button> 
+    </div>
+    {% endfor %}
+
+    <script>
+        function editWorkout(workoutId) {
+			var url = "{% url 'edit_workout' 0 %}".replace('0', workoutId);
+            window.open(url, 'editWorkoutPopup', 'height=500,width=500');
+        }
+		
+		function viewWorkout(workoutId) {
+            var url = "{% url 'workout_detail' 0 %}".replace('0', workoutId);
+            window.open(url, 'viewWorkoutPopup', 'height=500,width=500');
+        }
+
+        function deleteWorkout(workoutId) {
+        // Perform AJAX request to delete the workout
+        $.ajax({
+            url: '/delete_workout/',  // URL for deleting the workout
+            method: 'POST',
+            data: {
+                workoutId: workoutId,
+                csrfmiddlewaretoken: '{{ csrf_token }}'
+            },
+            success: function(response) {
+                console.log('Workout deleted successfully');
+                 // Remove the workout item from the UI
+                 $('#workout-' + workoutId).remove();
+            },
+            error: function(xhr, status, error) {
+                console.error('An error occurred while deleting the workout:', error);
+            }
+        });
+    }
+    </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Workout Detail</title>
+</head>
+<body>
+    <h1>Workout Detail</h1>
+    <p><strong>Title:</strong> {{ workout.title }}</p>
+    <p><strong>Workout Type:</strong> {{ workout.workout_type }}</p>
+    <h2>Exercises:</h2>
+    <ul>
+        {% for exercise in workout.exercises.all %}
+            <li>{{ exercise.name }}</li>
+        {% empty %}
+            <li>No exercises.</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>

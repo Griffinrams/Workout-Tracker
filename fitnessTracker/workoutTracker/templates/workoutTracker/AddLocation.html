@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Create Location</title>
+</head>
+<body>
+    <h1>Create Location</h1>
+    
+	
+	{% if error_message %}
+    <div class="alert alert-danger">
+        {{ error_message }}
+    </div>
+    {% endif %}
+	
+    <form method="post">
+        {% csrf_token %}
+        <label for="location_name">Location Name:</label>
+        <input type="text" id="location_name" name="location_name" required>
+        <br><br>
+        
+        <input type="submit" value="Create Location">
+    </form>
+	
+	<h2>Existing Locations</h2>
+    <ul>
+        {% for location in locations %}
+        <li>
+            {{ location.name }}
+            <form method="post" action="{% url 'delete_location' location.id %}" style="display: inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger" onclick="deleteLocation( '{{location.name}}')">Delete</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+	
+	<script>
+        
+		const form = document.querySelector("form");
+
+		form.addEventListener("submit", async function (event) {
+			event.preventDefault(); // Prevent the default form submission
+
+			const formData = new FormData(form);
+			const response = await fetch('/submit/add_location/', {
+				method: 'POST',
+				body: formData
+			});
+
+			const data = await response.json();
+
+			if (data.success) {
+				// Location created successfully, close the window
+				var new_location = document.getElementById('location_name').value;   
+				window.opener.addNewLocation(new_location);
+				window.close();
+			} else {
+				// Show an alert with the error message
+				alert(data.message);
+			}
+		});
+		function deleteLocation(location) {
+					console.log(location);
+
+					window.opener.removeLocation(location);
+			}
+    </script>
+</body>
+</html>

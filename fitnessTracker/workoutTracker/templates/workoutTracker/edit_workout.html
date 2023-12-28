@@ -1,0 +1,50 @@
+<!DOCTYPE html>	
+<html>
+<head>
+    <title>Edit Workout</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Edit Workout</h1>
+    <form method="post" action="{% url 'edit_workout' workout.id %}">
+        {% csrf_token %}
+        <label for="title">Title:</label>
+        <input type="text" name="title" value="{{ workout.title }}" required><br><br>
+        
+        <label for="workout_type">Workout Type:</label>
+        <input type="text" name="workout_type" value="{{ workout.workout_type }}" required><br><br>
+        
+        <div id="exercise-container">
+            {% for exercise in workout.exercises.all %}
+			<div class="exercise-row">
+				<label for="exercise_name">Exercise:</label>
+				<input type="text" name="exercise_name" value="{{ exercise.name }}">
+				<button type="button" class="delete-exercise-btn">Delete</button><br><br>
+			</div>
+            {% endfor %}
+        </div>
+        
+        <button id="add-exercise-btn" type="button">Add Exercise</button>
+        <br><br>
+        <button type="submit">Save Changes</button>
+    </form>
+    
+     <script>
+        $(document).ready(function() {
+            $('#add-exercise-btn').click(function() {
+                var exerciseRow = `
+					<div class="exercise-row">
+						<label for="exercise_name">Exercise:</label>
+						<input type="text" name="exercise_name" value="{{ exercise.name }}">
+						<button type="button" class="delete-exercise-btn">Delete</button><br><br>
+					</div>
+                `;
+                $('#exercise-container').append(exerciseRow);
+            });
+			$('#exercise-container').on('click', '.delete-exercise-btn', function() {
+                $(this).closest('.exercise-row').remove(); // Remove the entire line
+            });
+        });
+    </script>
+</body>
+</html>

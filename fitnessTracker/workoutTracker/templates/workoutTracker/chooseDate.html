@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Choose a Date</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.css">
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        #calendar {
+            margin-top: 20px;
+        }
+		.calendar-container {
+			width: 60%;
+			margin-top: 10px;
+		}
+        #submitBtn {
+            display: block;
+            margin: 20px auto;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        #submitBtn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+    <script>
+        $(document).ready(function() {
+		var selectedDate
+            $('#calendar').fullCalendar({
+                selectable: true,
+                select: function(start, end) {
+					selectedDate = start.format('YYYY-MM-DD');
+                    $('#submitBtn').prop('disabled', false);
+					//var url = "http://127.0.0.1:8000/submit?selectedDate=" + encodeURIComponent(selectedDate);
+                },
+				selectAllow: function(selectInfo) {
+						// Allow selection only for today and past dates
+						var today = moment().startOf('day');
+						return selectInfo.start.isSameOrBefore(today);
+					},
+                dayClick: function(date, jsEvent, view) {
+                    if (date.isAfter(moment(), 'day')) {
+                        $('#calendar').fullCalendar('unselect');
+                        return;
+                    }
+                    $('#calendar').fullCalendar('select', date);
+                    $('#submitBtn').prop('disabled', false);
+                },
+				dayRender: function(date, cell) {
+					// Grey out past dates(*need to figure out how to make this not include today)
+					var today = moment().startOf('day');
+					if (date.isAfter(today)) {
+						cell.css('background-color', '#f2f2f2');
+						cell.css('color', '#888');
+					}
+            }
+        });
+			$('#submitBtn').click(function(){
+					window.location.href = "http://127.0.0.1:8000/submit?selectedDate=" + encodeURIComponent(selectedDate);			
+				});
+		});
+    </script>
+<body>
+    <h1>Choose a Date</h1>
+
+    <div class="calendar-container">
+		<div id="calendar"></div>
+	</div>
+
+    <button id="submitBtn" disabled>Submit</button>
+</body>
+</html>

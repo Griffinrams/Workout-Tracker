@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Workout</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .exercise-row {
+            display: flex;
+            align-items: center;
+        }
+        .exercise-row .exercise-input {
+            margin-right: 10px; /* Adjust the margin to your desired space */
+        }
+		.exercise-row .exercise_label {
+            margin-right: 10px; /* Adjust the margin to your desired space */
+        }
+    </style>
+</head>
+<body>
+    <h1>Create a New Workout</h1>
+    <form method="post" action="{% url 'create_workout' %}">
+        {% csrf_token %}
+        <label for="title">Title:</label>
+        <input type="text" name="title" required><br><br>
+        
+        <label for="workout_type">Workout Type:</label>
+        <input type="text" name="workout_type" required><br><br>
+        <div id="exercise-container">
+            <div class="exercise-row">
+                <label for="exercise_name" class="exercise_label">Add an Exercise:</label>
+                <input type="text" name="exercise_name" class="exercise-input">
+                <button type="button" class="delete-exercise-btn">Delete</button><br><br>
+            </div>
+        </div>
+        
+        <button id="add-exercise-btn" type="button">Add Exercise</button>     
+        <br><br>
+        <button type="submit">Create Workout</button>
+    </form>
+    
+     <script>
+        $(document).ready(function() {
+            $('#add-exercise-btn').click(function() {
+                var exerciseRow = `
+                    <div class="exercise-row">
+                        <label for="exercise_name" class="exercise_label">Add an Exercise:</label>
+                        <input type="text" name="exercise_name" class="exercise-input">
+                        <button type="button" class="delete-exercise-btn">Delete</button><br><br>
+                    </div>
+                `;
+                $('#exercise-container').append(exerciseRow);
+            });
+
+            $('#exercise-container').on('click', '.delete-exercise-btn', function() {
+                $(this).closest('.exercise-row').remove(); // Remove the entire line
+            });
+        });
+    </script>
+</body>
+</html>

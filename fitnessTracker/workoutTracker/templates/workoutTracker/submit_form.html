@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Record Workout</title>
+	<style>
+	
+        .form-group {
+            margin-bottom: 10px;
+        }
+        .form-group label, .form-group input, .form-group button, .form-group span {
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .form-group label {
+            width: 50px;
+            text-align: right;
+            margin-right: 10px;
+        }
+		.hidden-span {
+			visibility: hidden;
+			}		
+    </style>
+	<script>
+         window.addEventListener('DOMContentLoaded', function() {
+            var urlParams = new URLSearchParams(window.location.search);
+            var selectedDate = urlParams.get('selectedDate');
+            var selectedDateElement = document.getElementById('selectedDate');
+			var todayCheckbox = document.getElementById('todayCheckbox');
+			var chooseDateButton = document.querySelector('button[type="button"]');
+			var hiddenDate = document.getElementById('hiddenDate');
+
+			
+			function updateSelectedDateLabel() {
+				var currentDate = new Date().toISOString().slice(0, 10);
+				selectedDateElement.textContent = todayCheckbox.checked ? currentDate : 'No date selected';
+				selectedDateElement.value = todayCheckbox.checked ? currentDate : 'No date selected';
+				chooseDateButton.disabled = todayCheckbox.checked;
+				hiddenDate.value = selectedDateElement.value;
+			}
+			
+			  todayCheckbox.addEventListener('change', function() {
+					updateSelectedDateLabel();
+				});
+			updateSelectedDateLabel();
+
+            if (selectedDate) {
+				selectedDateElement.textContent = selectedDate;
+				selectedDateElement.value = selectedDate;
+            } else {
+				selectedDateElement.textContent = 'No date selected';
+				selectedDateElement.value = 'No date selected';
+            }
+			hiddenDate.value = selectedDateElement.value;
+        });
+		
+		function receiveSelectedWorkout(workout) {
+		
+            fetch('/get_workout/' + workout + '/')
+                .then(response => response.json())
+                .then(workout => {
+				
+					var workoutObject = JSON.parse(workout.workout);
+					var title = workoutObject[0].fields.title;
+					var workoutType = workoutObject[0].fields.workout_type;
+
+                    // Update the form fields or perform other actions as needed
+                    document.getElementById('customWorkout').value = title;
+                    document.getElementById('Type').value = workoutType;
+					document.getElementById('selectedWorkoutId').value = workoutObject[0].pk;
+                    // ...
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+				
+        }
+		
+		function openWorkoutWindow() {
+            var workoutWindow = window.open("user_workout", "_blank", "height=400,width=600");
+			workoutWindow.receiveSelectedWorkout = receiveSelectedWorkout;
+        }
+		
+		function openLocationWindow() {
+			window.open("add_location", "_blank", "height=400,width=600");
+			
+		}
+		
+		function addNewLocation(new_location) {
+			const locationSelect = document.getElementById("Location");
+            const newOption = document.createElement("option");
+            newOption.value = new_location;
+            newOption.textContent = new_location;
+            locationSelect.appendChild(newOption);
+		}
+		
+		function removeLocation(locationName) { 
+			const locationSelect = document.getElementById("Location");
+			const options = locationSelect.options;
+
+			for (let i = 0; i < options.length; i++) {
+			  if (options[i].value === locationName) {
+				locationSelect.removeChild(options[i]);
+				break; // Stop the loop once the option is removed
+			  }
+			}
+		  }
+    </script>
+</head>
+<body>
+    <h1>Record Workout</h1>
+    <form action="{% url 'submit_data' %}" method="post" id="recordedWorkout">
+        {% csrf_token %}
+       <div class="form-group">
+			<label for="todayCheckbox">Date:</label>
+			<label for="todayCheckbox">Today</label>
+			<input type="checkbox" id="todayCheckbox" style="margin-right: 5px;">
+			<span>or</span>
+			<button href="{% url 'choose_date' %}" type="button" onclick="window.location.href='{% url 'choose_date' %}'">Choose another date</button>
+			<label id="selectedDate" name="selectedDate"></label>
+		</div>
+
+        <div class="form-group">
+            <label for="chooseWorkout">Workout:</label>
+            <button type="button" onclick="openWorkoutWindow()">Choose Workout</button>
+            <span class="hidden-span">OR</span>
+            <input type="text" id="customWorkout" name="customWorkout" readonly>
+        </div>
+        <div class="form-group">
+            <label for="Type">Type:</label>
+            <input type="text" name="Type" id="Type" readonly required>
+        </div>
+        <div class="form-group">
+            <label for="Location">Location:</label>
+			<select name="Location" id="Location" >
+				<option value="">Select Location</option>
+				<option value="Gym">Gym</option>
+				<option value="Home">Home</option>
+				<option value="Park">Park</option>
+				{% for location in locations %}
+				<option value="{{ location.name }}">{{ location.name }}</option>
+				{% endfor %}
+			</select>
+            <span class="hidden-span">OR</span>
+        	<button type="button" onclick="openLocationWindow()">Add/Edit Locations</button>
+        </div>
+        <div class="form-group">
+           <label for="Quality">Quality:</label>
+			<select name="Quality" id="Quality" >
+				<option value="">Select quality</option>
+				<option value="bad">Bad</option>
+				<option value="fair">Fair</option>
+				<option value="good">Good</option>
+				<option value="great">Great</option>
+				<option value="excellent">Excellent</option>
+			</select>
+        </div>
+        <div class="form-group">
+            <label for="Description">Description:</label>
+            <br>
+            <textarea name="Description" id="Description" rows="5" cols="30" ></textarea>
+        </div>
+        <button type="submit" value="submit">Submit</button>
+		<input type="hidden" id="hiddenDate" name="hiddenDate">
+		<input type="hidden" name="selectedWorkoutId" id="selectedWorkoutId">
+    </form>
+	
+	
+</body>
+</html>

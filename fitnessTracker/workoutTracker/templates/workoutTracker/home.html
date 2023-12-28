@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Workout Tracker</title>
+	<style>
+	.calendar-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 60%;
+            height: 400px;
+            margin: 50px auto;
+            background-color: #f2f2f2;
+        }
+        .month-header {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .day {
+            display: inline-block;
+            width: 70px;
+            height: 70px;
+            text-align: center;
+            line-height: 30px;
+            border: 1px solid #ccc;
+        }
+		.tooltip {
+		  position: relative;
+		  display: inline-block;
+		  border-bottom: 1px dotted black; /* If you want dots under the hoverable text */
+		}
+
+		.tooltip .tooltiptext {
+		  visibility: hidden;
+		  width: 200px;
+		  background-color: black;
+		  color: #fff;
+		  text-align: center;
+		  padding: 5px 0;
+		  border-radius: 6px;
+		 
+		  /* Position the tooltip text */
+		  position: absolute;
+		  z-index: 1;
+		  bottom: 100px; /* Move the tooltip 30 pixels above its default position */
+		  left: 50%;
+		  transform: translateX(-50%); /* Center the tooltip horizontally */
+		}
+
+		/* Show the tooltip text when you mouse over the tooltip container */
+		.tooltip:hover .tooltiptext {
+		  visibility: visible;
+		}
+		.tooltip .tooltiptext::after {
+		  content: " ";
+		  position: absolute;
+		  top: 100%; /* At the top of the tooltip */
+		  left: 50%;
+		  margin-left: -5px;
+		  border-width: 5px;
+		  border-style: solid;
+		  border-color: black transparent transparent transparent;
+		}
+        .day.workout {
+            background-color: green;
+            color: #fff;
+        }
+        .btn {
+            display: block;
+            margin-bottom: 10px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 4px;
+            width: 120px; /* Adjust the width as needed */
+        }
+        .planned-workouts-container {
+            justify-content: center;
+            align-items: center;
+            width: 40%;
+            height: 200px; /* Adjust the height as needed */
+			position: absolute;
+			top: 100px;
+			right: 50px;
+            background-color: #f2f2f2;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        .planned-workouts-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+        }
+        .planned-workouts-title {
+            font-weight: bold;
+        }
+        .planned-workouts-list {
+            padding: 10px;
+        }
+        .planned-workout {
+            background-color: #fff;
+            padding: 5px;
+            margin-bottom: 10px;
+        }
+		</style>
+</head>
+<body>
+    <h1>Welcome to the Workout Tracker</h1>
+    <a href="{% url 'submit_data' %}" class="btn" onclick="openPopup(event)">Record Workout</a>
+    <a href="{% url 'create_workout' %}" class="btn" onclick="openPopup(event)">Create Workout</a>
+    <a href="{% url 'view_workouts' %}" class="btn" onclick="openPopup(event)">View/Edit Workouts</a>
+    <a href="{% url 'planAhead' %}" class="btn" onclick="openBiggerPopup(event)">Plan Ahead</a>
+	
+	<div class="calendar-container">
+        <div id="calendar"></div>
+    </div>
+
+    <div class="planned-workouts-container">
+        <div class="planned-workouts-header">
+		    <div class="arrow-left">&larr;</div>
+            <div class="planned-workouts-title">Today</div>
+            <div class="arrow-right">&rarr;</div>
+        </div>
+        <div class="planned-workouts-list">
+            <!-- Display planned workouts for today here -->
+        </div>
+    </div>
+	
+
+    <script>
+ 	
+		function openPopup(event) {
+            event.preventDefault();
+            var url = event.target.href;
+            window.open(url, 'submitFormPopup', 'height=500,width=500');
+        }
+		
+        function openBiggerPopup(event) {
+            event.preventDefault();
+            var url = event.target.href;
+            window.open(url, 'submitFormPopup', 'height=700,width=700');
+        }
+		
+		// Get the DOM element for the calendar
+        var calendarElement = document.querySelector('#calendar');
+
+        // Initialize the calendar
+        function initializeCalendar() {
+            // Get the current date
+            var currentDate = new Date();
+            var currentMonth = currentDate.getMonth();
+            var currentYear = currentDate.getFullYear();
+
+            // Render the calendar for the current month
+            renderCalendar(currentMonth, currentYear);
+        }
+
+        // Render the calendar for a specific month and year
+        function renderCalendar(month, year) {
+            // Clear the calendar
+            calendarElement.innerHTML = '';
+
+            // Create the month header
+            var monthHeader = document.createElement('div');
+            monthHeader.classList.add('month-header');
+            monthHeader.textContent = getMonthName(month) + ' ' + year;
+            calendarElement.appendChild(monthHeader);
+
+            // Get the number of days in the month
+            var numDays = getNumDaysInMonth(month, year);
+
+            // Create the day cells for the month
+            async function createDayElement(day, month, year) {
+				var dayElement = document.createElement('div');
+				dayElement.classList.add('day');
+				dayElement.textContent = day;
+				const condition = await hasWorkout(day, month, year);
+				console.log(condition.workouts);
+				if (condition.exists) {
+					dayElement.classList.add('workout');
+					
+					// Create a tooltip container
+					var tooltip = document.createElement('div');
+					tooltip.classList.add('tooltip');
+
+					// Create the tooltip text element
+					var tooltipText = document.createElement('div');
+					tooltipText.classList.add('tooltiptext');
+					tooltipText.textContent = `Workouts for ${year}-${month}-${day}:`;
+
+					// Create a list element for workouts
+					var workoutList = document.createElement('ul');
+					condition.workouts.forEach((workout) => {
+						var workoutItem = document.createElement('li');
+						workoutItem.textContent = workout;
+						workoutList.appendChild(workoutItem);
+					});
+
+					// Append the workout list to the tooltip text
+					tooltipText.appendChild(workoutList);
+
+					// Append the tooltip text to the tooltip container
+					tooltip.appendChild(tooltipText);
+
+					// Append the tooltip container to the dayElement
+					dayElement.appendChild(tooltip);
+
+					// Show the tooltip on mouseover
+					dayElement.addEventListener('mouseover', function () {
+						tooltip.style.display = 'block';
+					});
+
+					// Hide the tooltip on mouseout
+					dayElement.addEventListener('mouseout', function () {
+						tooltip.style.display = 'none';
+					});
+				}
+					return dayElement;
+				}
+
+			async function createCalendar(month, year, numDays, calendarElement) {
+				const dayElements = [];
+				for (var day = 1; day <= numDays; day++) {
+					dayElements.push(createDayElement(day, month + 1, year));
+				}
+
+				const resolvedElements = await Promise.all(dayElements);
+				resolvedElements.forEach(element => {
+					calendarElement.appendChild(element);
+				});
+			}
+
+			createCalendar(month, year, numDays, calendarElement);
+
+
+        }
+
+        // Get the name of a month based on its index
+        function getMonthName(month) {
+            var monthNames = [
+                'January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'
+            ];
+            return monthNames[month];
+        }
+
+        // Get the number of days in a month
+        function getNumDaysInMonth(month, year) {
+            return new Date(year, month + 1, 0).getDate();
+        }
+
+        // Check if a workout is recorded on a specific day
+        async function hasWorkout(day, month, year) {
+			try {
+				// Create a date string in the format YYYY-MM-DD
+				var dateStr = year + '-' + month + '-' + day;
+
+					// Make an AJAX request to check if a RecordedDay object exists for the specified date
+					const response = await fetch('/check_recorded_day/' + dateStr + '/');
+					
+					if (response.ok) {
+						// If the response status is OK (2xx), parse the JSON response
+						const data = await response.json();
+						// Retrieve the 'exists' attribute from the JSON response
+						return {
+							exists: data.exists,
+							workouts: data.workouts // Assuming 'data.workouts' contains the recorded workouts
+						};
+					} else {
+						// If the response status is not OK, handle it as needed
+						console.error('Response status not OK:', response.status);
+						return {
+							exists: false,
+							workouts: [] // Return an empty array for workouts
+						};
+					}
+				} catch (error) {
+					console.error('Error:', error);
+					return {
+						exists: false,
+						workouts: [] // Return an empty array for workouts
+						};
+				}
+			}
+        // Example function to get workouts for a specific date
+        function getWorkoutsForDate(day, month, year) {
+            // Add your logic here to retrieve workouts for the specified date
+            // Return an array of workouts
+            // Example:
+            // var workouts = ...; // Retrieve workouts from your data source
+            // return workouts.filter(function(workout) {
+            //     return workout.date.getDay() === day && workout.date.getMonth() === month && workout.date.getFullYear() === year;
+            // });
+            return [];
+        }
+
+        // Initialize the calendar when the page is loaded
+        window.addEventListener('load', initializeCalendar);
+
+        // Array to hold the planned workouts for each day
+        var plannedWorkouts = {{ planned_workouts|safe }};
+
+        // Get the DOM elements
+        var headerElement = document.querySelector('.planned-workouts-header');
+        var titleElement = document.querySelector('.planned-workouts-title');
+        var arrowRight = document.querySelector('.arrow-right');
+		var arrowLeft = document.querySelector('.arrow-left');
+        var workoutsListElement = document.querySelector('.planned-workouts-list');
+				
+        // Initial date
+        var currentDate = new Date().toISOString().split('T')[0];
+
+        // Display planned workouts for the current date
+        displayPlannedWorkouts(currentDate);
+
+        // Function to display planned workouts for a specific date
+        function displayPlannedWorkouts(date) {
+            // Clear the previous workouts list
+            workoutsListElement.innerHTML = '';
+
+            // Get the planned workouts for the date
+            var workouts = plannedWorkouts[date];
+
+            if (workouts && workouts.length > 0) {
+                // Display each workout in the list
+                workouts.forEach(function(workout) {
+                    var workoutElement = document.createElement('div');
+                    workoutElement.classList.add('planned-workout');
+                    workoutElement.textContent = workout.title + ' - ' + workout.type;
+                    workoutsListElement.appendChild(workoutElement);
+                });
+            } else {
+                // Display a message if there are no planned workouts for the date
+                var noWorkoutsElement = document.createElement('div');
+                noWorkoutsElement.textContent = 'No planned workouts for this day';
+                workoutsListElement.appendChild(noWorkoutsElement);
+            }
+        }
+
+        // Event listener for the arrow element to go to the next day
+        arrowRight.addEventListener('click', goToNextDay);
+        arrowLeft.addEventListener('click', goToPrevDay);
+
+        // Function to go to the next day
+        function goToNextDay() {
+            var today = new Date().toISOString().split('T')[0];		
+            var nextDate = new Date(currentDate);
+            nextDate.setDate(nextDate.getDate() + 1);
+            var nextDateString = nextDate.toISOString().split('T')[0];
+
+            // Update the current date and display the planned workouts for the next day
+            currentDate = nextDateString;
+			if (nextDateString == today) {
+				titleElement.textContent = "Today";
+			} else {
+				titleElement.textContent = nextDateString;
+			}
+            displayPlannedWorkouts(nextDateString);
+        }
+		
+		function goToPrevDay() {
+            var today = new Date().toISOString().split('T')[0];				
+            var prevDate = new Date(currentDate);
+            prevDate.setDate(prevDate.getDate() - 1);
+            var prevDateString = prevDate.toISOString().split('T')[0];
+
+            // Update the current date and display the planned workouts for the next day
+            currentDate = prevDateString;
+            if (prevDateString == today) {
+				titleElement.textContent = "Today";
+			} else {
+				titleElement.textContent = prevDateString;
+			}
+            displayPlannedWorkouts(prevDateString);
+        }
+    </script>
+</body>
+</html>

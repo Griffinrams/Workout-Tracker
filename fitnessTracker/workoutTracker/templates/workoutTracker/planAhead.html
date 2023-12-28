@@ -1,0 +1,180 @@
+	<!DOCTYPE html>
+	<html>
+	<head>
+		<title>Plan Ahead</title>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.css">
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.js"></script>
+		<style>
+			.workouts-container {
+				display: flex;
+				justify-content: space-between;
+			}
+			.workout-item {
+				margin-bottom: 20px;
+			}
+			.workout-title {
+				font-weight: bold;
+				margin-bottom: 5px;
+			}
+			.select-btn {
+				background-color: #007bff;
+				color: #fff;
+				border: none;
+				padding: 5px 10px;
+				border-radius: 4px;
+				cursor: pointer;
+			}
+			.selected .select-btn {
+				background-color: #fff;
+				color: #888;
+				border: 1px solid #888;
+			}
+			.calendar-container {
+				width: 50%;
+				margin-top: 10px;
+			}
+			.plan-button {
+				position: fixed;
+				bottom: 20px; /* Adjust the distance from the bottom as needed */
+				right: 20px; /* Adjust the distance from the right as needed */
+				background-color: #007bff;
+				color: #fff;
+				border: none;
+				padding: 5px 10px;
+				border-radius: 4px;
+				cursor: pointer;
+				opacity: 0.5;
+				z-index: 1; /* Ensure it's above other elements */
+			}
+			.plan-button:hover {
+				opacity: 1;
+			}
+			.plan-button.disabled {
+				cursor: not-allowed;
+			}
+			.show-plan-button {
+				display: inline-block;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>Plan Ahead</h1>
+
+		<div class="workouts-container">
+			<div class="workouts-list">
+				{% for workout in workouts %}
+				<div class="workout-item">
+					<div class="workout-title">{{ workout.title }}</div>
+					<div class="workout-type">{{ workout.workout_type }}</div>
+					<button class="select-btn" data-workout-id="{{ workout.id }}">Select</button>
+				</div>
+				{% endfor %}
+			</div>
+
+			<div class="calendar-container">
+				<div id="calendar"></div>
+			</div>
+		</div>
+
+		<div class="plan-button disabled" disabled id="planBtn">Plan!</button>
+		
+
+		<script>
+		$(document).ready(function() {
+			  // Initialize FullCalendar
+			  var previouslySelectedDate = null; // Initialize the variable
+
+			  $('#calendar').fullCalendar({
+				selectable: true,
+				selectAllow: function(selectInfo) {
+				  // Allow selection only for today and future dates
+				  var today = moment().startOf('day');
+				  return (selectInfo.start.isSameOrAfter(today) || selectInfo.start.isSame(today, 'day'));
+				},
+				select: function(start, end) {
+				  // Store selected date as a data attribute in the Plan! button
+				  previouslySelectedDate = start.format('YYYY-MM-DD');
+				  $('#planBtn').data('selectedDate', start.format('YYYY-MM-DD'));
+				  enablePlanButtonIfWorkoutSelected();
+				},
+				unselectAuto: false, // Disable FullCalendar's automatic unselect
+				dayRender: function(date, cell) {
+				  // Grey out past dates
+				  var today = moment();
+				  if (date.isBefore(today, 'day') && !date.isSame(today, 'day')) {
+					cell.css('background-color', '#f2f2f2');
+					cell.css('color', '#888');
+				  }
+				}
+			  });
+
+			  // Function to enable the Plan! button if both date and workout are selected
+			  function enablePlanButtonIfWorkoutSelected() {
+				var selectedDate = $('#planBtn').data('selectedDate');
+				if (selectedDate && $('.workout-item.selected').length > 0) {
+				  $('#planBtn').removeClass('disabled');
+				  $('#planBtn').prop('disabled', false); 
+				} else {
+				  $('#planBtn').addClass('disabled');
+				  $('#planBtn').prop('disabled', true); 
+
+				}
+			  }
+
+			  // Initially, disable the Plan! button
+			  $('#planBtn').addClass('disabled');
+
+			  // Handle workout selection
+			  $('.workout-item').click(function() {
+				var $selectedWorkoutItem = $(this);
+
+				if ($selectedWorkoutItem.hasClass('selected')) {
+				  // Unselect the workout item
+				  $selectedWorkoutItem.removeClass('selected');
+				  $('#planBtn').removeData('workout-id');
+				} else {
+				  // Select the workout item
+				  $('.workout-item').removeClass('selected');
+				  $selectedWorkoutItem.addClass('selected');
+				  var selectedWorkoutId = $selectedWorkoutItem.find('.select-btn').data('workout-id');
+				  $('#planBtn').data('workout-id', selectedWorkoutId);
+				}
+
+				enablePlanButtonIfWorkoutSelected();
+			  });
+
+			  // Handle Plan! button click
+			  $('#planBtn').click(function() {
+				// Check if a date and workout are selected
+				var selectedDate = $('#planBtn').data('selectedDate');
+				if (selectedDate && $('.workout-item.selected').length > 0) {
+				  var workoutId = $(this).data('workout-id');
+				  console.log(workoutId);
+				  // Make an AJAX request to plan the workout
+				  $.ajax({
+					url: '/plan_workout/',
+					method: 'POST',
+					data: {
+					  workoutId: workoutId,
+					  date: selectedDate,
+					  csrfmiddlewaretoken: '{{ csrf_token }}'
+					},
+					success: function(response) {
+					  console.log('Workout planned successfully for date:', selectedDate);
+					  // Optionally, display a success message or perform any other actions
+					  window.location.href = '/successfulPlan'; // Redirect to success page
+					},
+					error: function(xhr, status, error) {
+					  console.error('An error occurred while planning the workout:', error);
+					}
+				  });
+				}
+			  });
+			});
+
+
+		</script>
+	</body>
+	</html>

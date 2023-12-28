@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Workouts</title>
+    <style>
+        .select-button {
+				background-color: #007bff;
+				color: #fff;
+				border: none;
+				padding: 5px 10px;
+				border-radius: 4px;
+				cursor: pointer;
+			}
+			
+        .select-button.selected {
+				background-color: #fff;
+				color: #888;
+				border: 1px solid #888;
+			}
+		.workout-item {
+				margin-bottom: 40px;
+			}
+		.workout-title {
+				font-weight: bold;
+				margin-bottom: 5px;
+			}
+    </style>
+    <script>
+        function selectWorkout(workoutId, button) {
+            var selectedButtons = document.querySelectorAll('.select-button.selected');
+
+            selectedButtons.forEach(function (selectedButton) {
+                if (selectedButton !== button) {
+                    selectedButton.classList.remove('selected');
+                }
+            });
+
+            button.classList.toggle('selected');
+            var selectedWorkoutId = button.classList.contains('selected') ? workoutId : null;
+            document.getElementById('selectedWorkoutId').value = selectedWorkoutId;
+            var submitButton = document.getElementById('submitButton');
+            submitButton.disabled = !selectedWorkoutId;
+        }
+        function closeWindow() {
+			var selectedWorkoutId = document.getElementById('selectedWorkoutId').value;         
+            // Pass the selected workout ID back to the original window
+            window.opener.receiveSelectedWorkout(selectedWorkoutId);
+            window.close();
+        }
+		function createWorkoutWindow() {
+			window.open("create_workout/", "_blank", "height=400,width=600");
+		}
+    </script>
+</head>
+<body>
+    <h1>Your Workouts</h1>
+    <ul style="list-style: none; padding: 0; margin: 0;">
+        {% for workout in workouts %}						
+        <div class="workout-item">
+                <div class="workout-title">{{ workout.title }}</div>
+				<div class="workout-type">{{ workout.workout_type }}</div>
+                <button class="select-button" onclick="selectWorkout({{ workout.id }}, this)">Select</button>
+		</div>   
+        {% endfor %}
+    </ul>
+    <form id="submitForm" action="" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="selectedWorkoutId" id="selectedWorkoutId">
+        <button id="submitButton" type="submit" disabled onclick="closeWindow()">Submit</button>
+		<button type="button" onclick="window.location.href='{% url 'create_workout_' %}'">Create a New Workout</button>
+    </form>
+</body>
+</html>
